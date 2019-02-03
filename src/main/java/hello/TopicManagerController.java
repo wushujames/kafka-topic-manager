@@ -32,7 +32,7 @@ public class TopicManagerController {
 
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
-    private final LinkedBlockingQueue<String> deleteQueue = new LinkedBlockingQueue<String>();
+    private final LinkedBlockingQueue<ScheduledTopicDelete> deleteQueue = new LinkedBlockingQueue<ScheduledTopicDelete>();
 
     
     @RequestMapping("/greeting")
@@ -42,13 +42,13 @@ public class TopicManagerController {
     }
 
     @RequestMapping("/deletions")
-    public Collection<String> listDeletions() {
+    public Collection<ScheduledTopicDelete> listDeletions() {
     	return deleteQueue;
     }
 
-    @RequestMapping("/pop")
-    public String pop(@RequestParam(value="name", defaultValue="World") String name) {
-    	return deleteQueue.poll();
+    @RequestMapping("/peek")
+    public ScheduledTopicDelete pop(@RequestParam(value="name", defaultValue="World") String name) {
+    	return deleteQueue.peek();
     }
 
     @RequestMapping(value="/cluster/{cluster}", method = RequestMethod.GET)
@@ -69,16 +69,17 @@ public class TopicManagerController {
 
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
     public String queueDeleteTopic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
-    	deleteQueue.add(topic);
-    	return "scheduled deletion for " + topic;
+    	deleteQueue.add(new ScheduledTopicDelete(broker, topic));
+    	return "scheduled deletion for " + topic + " from broker " + broker;
     }
 
     @Scheduled(fixedDelay = 10000)
     public void deleteTopics() throws InterruptedException, ExecutionException {
         logger.info("Fixed Delay Task :: Execution Time - {}", dateTimeFormatter.format(LocalDateTime.now()));
 
-        String topic = deleteQueue.take();
-    	String broker = "localhost";
+        ScheduledTopicDelete scheduledDelete = deleteQueue.take();
+        String topic = scheduledDelete.getTopic();
+    	String broker = scheduledDelete.getBroker();
         Properties adminClientProperties = new Properties();
         adminClientProperties.put("bootstrap.servers", broker + ":9092");
         try (AdminClient client = AdminClient.create(adminClientProperties)) {
