@@ -47,7 +47,7 @@ public class TopicManagerController {
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.GET)
     public String topic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
         Properties adminClientProperties = new Properties();
-        adminClientProperties.put("bootstrap.servers", "localhost:9092");
+        adminClientProperties.put("bootstrap.servers", broker + ":9092");
         try (AdminClient client = AdminClient.create(adminClientProperties)) {
         	DescribeTopicsResult result = client.describeTopics(Collections.singleton(topic));
         	return result.all().get().toString();
