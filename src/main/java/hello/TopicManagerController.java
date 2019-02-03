@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,6 +54,17 @@ public class TopicManagerController {
         	DescribeTopicsResult future = client.describeTopics(Collections.singleton(topic));
         	Map<String, TopicDescription> result = future.all().get();
         	return result.get(topic).toString();
+        }
+    }
+
+    @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
+    public String deleteTopic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
+        Properties adminClientProperties = new Properties();
+        adminClientProperties.put("bootstrap.servers", broker + ":9092");
+        try (AdminClient client = AdminClient.create(adminClientProperties)) {
+        	DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
+        	Void result = future.all().get();
+        	return "deleted";
         }
     }
 
