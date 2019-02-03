@@ -1,5 +1,6 @@
 package hello;
 
+import java.util.Collections;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -7,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -47,8 +49,8 @@ public class TopicManagerController {
         Properties adminClientProperties = new Properties();
         adminClientProperties.put("bootstrap.servers", "localhost:9092");
         try (AdminClient client = AdminClient.create(adminClientProperties)) {
-        	DescribeClusterResult result = client.describeCluster();
-        	return result.nodes().get().toString();
+        	DescribeTopicsResult result = client.describeTopics(Collections.singleton(topic));
+        	return result.all().get().toString();
         }
     	
     }
