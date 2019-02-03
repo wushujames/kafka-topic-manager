@@ -31,5 +31,6 @@ targetCompatibility = 1.8
 
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
+    compile("org.apache.kafka:kafka-clients:2.1.0")
     testCompile('org.springframework.boot:spring-boot-starter-test')
 }
