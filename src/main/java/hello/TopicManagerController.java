@@ -1,8 +1,12 @@
 package hello;
 
+import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -39,8 +43,14 @@ public class TopicManagerController {
     }
 
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.GET)
-    public String topic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) {
-    	return topic;
+    public String topic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
+        Properties adminClientProperties = new Properties();
+        adminClientProperties.put("bootstrap.servers", "localhost:9092");
+        try (AdminClient client = AdminClient.create(adminClientProperties)) {
+        	DescribeClusterResult result = client.describeCluster();
+        	return result.nodes().get().toString();
+        }
+    	
     }
 
 }
