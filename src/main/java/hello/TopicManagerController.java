@@ -38,5 +38,10 @@ public class TopicManagerController {
     	return cluster;
     }
 
+    @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.GET)
+    public String topic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) {
+    	return topic;
+    }
+
 }
 
