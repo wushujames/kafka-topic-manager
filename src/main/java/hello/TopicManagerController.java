@@ -1,10 +1,12 @@
 package hello;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.kafka.clients.admin.AdminClient;
@@ -22,7 +24,8 @@ public class TopicManagerController {
 
     private static final String template = "Hello, %s!";
     private final AtomicLong counter = new AtomicLong();
-    private final ConcurrentLinkedQueue<String> deleteQueue = new ConcurrentLinkedQueue<String>(); 
+    private final LinkedBlockingQueue<String> deleteQueue = new LinkedBlockingQueue<String>();
+    
     
     @RequestMapping("/greeting")
     public Greeting greeting(@RequestParam(value="name", defaultValue="World") String name) {
@@ -31,8 +34,7 @@ public class TopicManagerController {
     }
 
     @RequestMapping("/deletions")
-    public ConcurrentLinkedQueue<String> deletion(@RequestParam(value="name", defaultValue="World") String name) {
-    	deleteQueue.add("" + counter.incrementAndGet() + " " + name);
+    public Collection<String> listDeletions() {
     	return deleteQueue;
     }
 
