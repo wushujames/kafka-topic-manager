@@ -1,14 +1,15 @@
 package hello;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.apache.kafka.clients.admin.DescribeTopicsResult;
+import org.apache.kafka.clients.admin.TopicDescription;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -49,10 +50,10 @@ public class TopicManagerController {
         Properties adminClientProperties = new Properties();
         adminClientProperties.put("bootstrap.servers", broker + ":9092");
         try (AdminClient client = AdminClient.create(adminClientProperties)) {
-        	DescribeTopicsResult result = client.describeTopics(Collections.singleton(topic));
-        	return result.all().get().toString();
+        	DescribeTopicsResult future = client.describeTopics(Collections.singleton(topic));
+        	Map<String, TopicDescription> result = future.all().get();
+        	return result.get(topic).toString();
         }
-    	
     }
 
 }
