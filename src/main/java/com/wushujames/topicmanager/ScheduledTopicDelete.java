@@ -1,4 +1,4 @@
-package hello;
+package com.wushujames.topicmanager;
 
 public class ScheduledTopicDelete {
 
