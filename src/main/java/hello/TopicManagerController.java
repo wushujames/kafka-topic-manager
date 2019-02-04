@@ -36,18 +36,6 @@ public class TopicManagerController {
     	return deleteQueue;
     }
 
-
-    @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.GET)
-    public String topic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
-        Properties adminClientProperties = new Properties();
-        adminClientProperties.put("bootstrap.servers", broker + ":9092");
-        try (AdminClient client = AdminClient.create(adminClientProperties)) {
-        	DescribeTopicsResult future = client.describeTopics(Collections.singleton(topic));
-        	Map<String, TopicDescription> result = future.all().get();
-        	return result.get(topic).toString();
-        }
-    }
-
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Queue a topic for deletion.",
     	notes = "Deletes will happen one at a time, every 10 seconds.")
