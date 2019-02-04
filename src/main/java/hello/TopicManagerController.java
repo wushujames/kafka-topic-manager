@@ -26,8 +26,10 @@ import io.swagger.annotations.ApiParam;
 
 @RestController
 public class TopicManagerController {
-    private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
+	private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+
+    private static final int DELETE_INTERVAL_SECONDS = 60;
 
     private final LinkedBlockingQueue<ScheduledTopicDelete> deleteQueue = new LinkedBlockingQueue<ScheduledTopicDelete>();
 
@@ -39,7 +41,7 @@ public class TopicManagerController {
 
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Queue a topic for deletion.",
-    	notes = "Deletes will happen one at a time, every 10 seconds.")
+    	notes = "Deletes will happen one at a time, every " + DELETE_INTERVAL_SECONDS + " seconds.")
 	public String queueDeleteTopic(
 			@ApiParam("Hostname of one of the brokers where this topic can be found") @PathVariable("broker") String broker,
 			@ApiParam("Topic to delete")@PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
@@ -47,7 +49,7 @@ public class TopicManagerController {
 		return "scheduled deletion for " + topic + " from broker " + broker;
     }
 
-    @Scheduled(fixedDelay = 10000)
+    @Scheduled(fixedDelay = DELETE_INTERVAL_SECONDS * 1000)
     public void deleteTopics() throws InterruptedException, ExecutionException {
         logger.info("Fixed Delay Task :: Execution Time - {}", dateTimeFormatter.format(LocalDateTime.now()));
 
