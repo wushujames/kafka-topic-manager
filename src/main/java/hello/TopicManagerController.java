@@ -19,7 +19,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.ApiOperation;
@@ -37,15 +36,6 @@ public class TopicManagerController {
     	return deleteQueue;
     }
 
-    @RequestMapping("/peek")
-    public ScheduledTopicDelete pop(@RequestParam(value="name", defaultValue="World") String name) {
-    	return deleteQueue.peek();
-    }
-
-    @RequestMapping(value="/cluster/{cluster}", method = RequestMethod.GET)
-    public String cluster(@PathVariable("cluster") String cluster) {
-    	return cluster;
-    }
 
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.GET)
     public String topic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
