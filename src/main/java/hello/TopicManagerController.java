@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.annotations.ApiOperation;
+
 @RestController
 public class TopicManagerController {
     private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
@@ -68,6 +70,8 @@ public class TopicManagerController {
     }
 
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
+    @ApiOperation(value = "Queue a topic for deletion.",
+    	notes = "Deletes will happen one at a time, every 10 seconds.")
     public String queueDeleteTopic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
     	deleteQueue.add(new ScheduledTopicDelete(broker, topic));
     	return "scheduled deletion for " + topic + " from broker " + broker;
