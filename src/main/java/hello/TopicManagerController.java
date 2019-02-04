@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 
 @RestController
 public class TopicManagerController {
@@ -39,9 +40,11 @@ public class TopicManagerController {
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Queue a topic for deletion.",
     	notes = "Deletes will happen one at a time, every 10 seconds.")
-    public String queueDeleteTopic(@PathVariable("broker") String broker, @PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
-    	deleteQueue.add(new ScheduledTopicDelete(broker, topic));
-    	return "scheduled deletion for " + topic + " from broker " + broker;
+	public String queueDeleteTopic(
+			@ApiParam("Hostname of one of the brokers where this topic can be found") @PathVariable("broker") String broker,
+			@ApiParam("Topic to delete")@PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
+		deleteQueue.add(new ScheduledTopicDelete(broker, topic));
+		return "scheduled deletion for " + topic + " from broker " + broker;
     }
 
     @Scheduled(fixedDelay = 10000)
