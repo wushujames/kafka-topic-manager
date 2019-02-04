@@ -76,27 +76,27 @@ public class TopicManagerController {
         	zookeeperClient.blockUntilConnected();
 
         	CountDownLatch latch = new CountDownLatch(1);
-            final NodeCache nodeCache = new NodeCache(zookeeperClient, "/admin/delete_topics/" + topic);
-            nodeCache.getListenable().addListener(new NodeCacheListener() {
-                @Override
-                public void nodeChanged() throws Exception {
-                    ChildData currentData = nodeCache.getCurrentData();
-                    if (currentData == null) { 
-                    	logger.info("data change watched, and current data = null");
-                    	latch.countDown();
-                    } else {
-                    	logger.info("node " + currentData.getPath() + " changed");
-                    }
-                }
-            });
-            nodeCache.start();
-            nodeCache.rebuild();
-        	DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
-        	Void result = future.all().get();
-        	logger.info("deleted " + topic);
-        	
-        	latch.await();
-        	nodeCache.close();
+        	try (NodeCache nodeCache = new NodeCache(zookeeperClient, "/admin/delete_topics/" + topic)) {
+        		nodeCache.getListenable().addListener(new NodeCacheListener() {
+        			@Override
+        			public void nodeChanged() throws Exception {
+        				ChildData currentData = nodeCache.getCurrentData();
+        				if (currentData == null) { 
+        					logger.info("data change watched, and current data = null");
+        					latch.countDown();
+        				} else {
+        					logger.info("node " + currentData.getPath() + " changed");
+        				}
+        			}
+        		});
+        		nodeCache.start();
+        		nodeCache.rebuild();
+        		DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
+        		Void result = future.all().get();
+        		logger.info("deleted " + topic);
+
+        		latch.await();
+        	}
         	
         }
     }    
