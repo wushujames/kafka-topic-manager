@@ -6,11 +6,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
@@ -32,17 +29,9 @@ public class TopicManagerController {
     private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private static final String template = "Hello, %s!";
-    private final AtomicLong counter = new AtomicLong();
     private final LinkedBlockingQueue<ScheduledTopicDelete> deleteQueue = new LinkedBlockingQueue<ScheduledTopicDelete>();
 
     
-    @RequestMapping("/greeting")
-    public Greeting greeting(@RequestParam(value="name", defaultValue="World") String name) {
-        return new Greeting(counter.incrementAndGet(),
-                            String.format(template, name));
-    }
-
     @RequestMapping(value = "/deletions", method = RequestMethod.GET)
     public Collection<ScheduledTopicDelete> listDeletions() {
     	return deleteQueue;
