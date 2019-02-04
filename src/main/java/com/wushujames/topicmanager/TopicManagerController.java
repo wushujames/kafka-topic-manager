@@ -1,4 +1,4 @@
-package hello;
+package com.wushujames.topicmanager;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
