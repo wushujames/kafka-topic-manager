@@ -1,18 +1,24 @@
 package hello;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.ChildData;
+import org.apache.curator.framework.recipes.cache.NodeCache;
+import org.apache.curator.framework.recipes.cache.NodeCacheListener;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.DeleteTopicsResult;
-import org.apache.kafka.clients.admin.DescribeTopicsResult;
-import org.apache.kafka.clients.admin.TopicDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -29,7 +35,7 @@ public class TopicManagerController {
 	private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    private static final int DELETE_INTERVAL_SECONDS = 60;
+    private static final int DELETE_INTERVAL_SECONDS = 3;
 
     private final LinkedBlockingQueue<ScheduledTopicDelete> deleteQueue = new LinkedBlockingQueue<ScheduledTopicDelete>();
 
@@ -50,7 +56,7 @@ public class TopicManagerController {
     }
 
     @Scheduled(fixedDelay = DELETE_INTERVAL_SECONDS * 1000)
-    public void deleteTopics() throws InterruptedException, ExecutionException {
+    public void deleteTopics() throws Exception {
         logger.info("Fixed Delay Task :: Execution Time - {}", dateTimeFormatter.format(LocalDateTime.now()));
 
         ScheduledTopicDelete scheduledDelete = deleteQueue.take();
@@ -58,10 +64,40 @@ public class TopicManagerController {
     	String broker = scheduledDelete.getBroker();
         Properties adminClientProperties = new Properties();
         adminClientProperties.put("bootstrap.servers", broker + ":9092");
-        try (AdminClient client = AdminClient.create(adminClientProperties)) {
+        
+        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+
+        
+        
+        try (AdminClient client = AdminClient.create(adminClientProperties);
+        		CuratorFramework zookeeperClient = CuratorFrameworkFactory.newClient(broker + ":2181", retryPolicy)) {
+        	
+        	zookeeperClient.start();
+        	zookeeperClient.blockUntilConnected();
+
+        	CountDownLatch latch = new CountDownLatch(1);
+            final NodeCache nodeCache = new NodeCache(zookeeperClient, "/admin/delete_topics/" + topic);
+            nodeCache.getListenable().addListener(new NodeCacheListener() {
+                @Override
+                public void nodeChanged() throws Exception {
+                    ChildData currentData = nodeCache.getCurrentData();
+                    if (currentData == null) { 
+                    	logger.info("data change watched, and current data = null");
+                    	latch.countDown();
+                    } else {
+                    	logger.info("node " + currentData.getPath() + " changed");
+                    }
+                }
+            });
+            nodeCache.start();
+            nodeCache.rebuild();
         	DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
         	Void result = future.all().get();
         	logger.info("deleted " + topic);
+        	
+        	latch.await();
+        	nodeCache.close();
+        	
         }
     }    
     
