@@ -43,7 +43,7 @@ public class TopicManagerController {
                             String.format(template, name));
     }
 
-    @RequestMapping("/deletions")
+    @RequestMapping(value = "/deletions", method = RequestMethod.GET)
     public Collection<ScheduledTopicDelete> listDeletions() {
     	return deleteQueue;
     }
