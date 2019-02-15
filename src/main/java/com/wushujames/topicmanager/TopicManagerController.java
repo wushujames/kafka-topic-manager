@@ -66,8 +66,6 @@ public class TopicManagerController {
 
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
 
-
-
         try (AdminClient client = AdminClient.create(adminClientProperties);
              CuratorFramework zookeeperClient = CuratorFrameworkFactory.newClient(broker + ":2181", retryPolicy)) {
 
