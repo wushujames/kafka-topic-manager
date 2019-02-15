@@ -31,27 +31,27 @@ import io.swagger.annotations.ApiParam;
 
 @RestController
 public class TopicManagerController {
-	private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
+    private static final Logger logger = LoggerFactory.getLogger(TopicManagerController.class);
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private static final int DELETE_INTERVAL_SECONDS = 3;
 
     private final LinkedBlockingQueue<ScheduledTopicDelete> deleteQueue = new LinkedBlockingQueue<ScheduledTopicDelete>();
 
-    
+
     @RequestMapping(value = "/deletions", method = RequestMethod.GET)
     public Collection<ScheduledTopicDelete> listDeletions() {
-    	return deleteQueue;
+        return deleteQueue;
     }
 
     @RequestMapping(value="/broker/{broker}/topic/{topic}", method = RequestMethod.DELETE)
     @ApiOperation(value = "Queue a topic for deletion.",
-    	notes = "Deletes will happen one at a time, every " + DELETE_INTERVAL_SECONDS + " seconds.")
-	public String queueDeleteTopic(
-			@ApiParam("Hostname of one of the brokers where this topic can be found") @PathVariable("broker") String broker,
-			@ApiParam("Topic to delete")@PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
-		deleteQueue.add(new ScheduledTopicDelete(broker, topic));
-		return "scheduled deletion for " + topic + " from broker " + broker;
+        notes = "Deletes will happen one at a time, every " + DELETE_INTERVAL_SECONDS + " seconds.")
+    public String queueDeleteTopic(
+            @ApiParam("Hostname of one of the brokers where this topic can be found") @PathVariable("broker") String broker,
+            @ApiParam("Topic to delete")@PathVariable("topic") String topic) throws InterruptedException, ExecutionException {
+        deleteQueue.add(new ScheduledTopicDelete(broker, topic));
+        return "scheduled deletion for " + topic + " from broker " + broker;
     }
 
     @Scheduled(fixedDelay = DELETE_INTERVAL_SECONDS * 1000)
@@ -60,44 +60,44 @@ public class TopicManagerController {
 
         ScheduledTopicDelete scheduledDelete = deleteQueue.take();
         String topic = scheduledDelete.getTopic();
-    	String broker = scheduledDelete.getBroker();
+        String broker = scheduledDelete.getBroker();
         Properties adminClientProperties = new Properties();
         adminClientProperties.put("bootstrap.servers", broker + ":9092");
-        
+
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
 
-        
-        
+
+
         try (AdminClient client = AdminClient.create(adminClientProperties);
-        		CuratorFramework zookeeperClient = CuratorFrameworkFactory.newClient(broker + ":2181", retryPolicy)) {
-        	
-        	zookeeperClient.start();
-        	zookeeperClient.blockUntilConnected();
+             CuratorFramework zookeeperClient = CuratorFrameworkFactory.newClient(broker + ":2181", retryPolicy)) {
 
-        	CountDownLatch latch = new CountDownLatch(1);
-        	String zkpath = "/admin/delete_topics/" + topic;
-			try (NodeCache nodeCache = new NodeCache(zookeeperClient, zkpath)) {
-        		nodeCache.getListenable().addListener(new NodeCacheListener() {
-        			@Override
-        			public void nodeChanged() throws Exception {
-        				ChildData currentData = nodeCache.getCurrentData();
-        				if (currentData == null) { 
-        					logger.info("path " + zkpath + " disappeared, which means the topic has successfully been deleted");
-        					latch.countDown();
-        				}
-        			}
-        		});
-        		nodeCache.start();
-        		nodeCache.rebuild();
-        		DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
-        		future.all().get();
-        		logger.info("deleted " + topic);
+            zookeeperClient.start();
+            zookeeperClient.blockUntilConnected();
 
-        		latch.await();
-        	}
-        	
+            CountDownLatch latch = new CountDownLatch(1);
+            String zkpath = "/admin/delete_topics/" + topic;
+            try (NodeCache nodeCache = new NodeCache(zookeeperClient, zkpath)) {
+                nodeCache.getListenable().addListener(new NodeCacheListener() {
+                    @Override
+                    public void nodeChanged() throws Exception {
+                        ChildData currentData = nodeCache.getCurrentData();
+                        if (currentData == null) { 
+                            logger.info("path " + zkpath + " disappeared, which means the topic has successfully been deleted");
+                            latch.countDown();
+                        }
+                    }
+                });
+                nodeCache.start();
+                nodeCache.rebuild();
+                DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
+                future.all().get();
+                logger.info("deleted " + topic);
+
+                latch.await();
+            }
+
         }
     }    
-    
+
 }
 
