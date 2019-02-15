@@ -91,7 +91,7 @@ public class TopicManagerController {
         		nodeCache.start();
         		nodeCache.rebuild();
         		DeleteTopicsResult future = client.deleteTopics(Collections.singleton(topic));
-        		Void result = future.all().get();
+        		future.all().get();
         		logger.info("deleted " + topic);
 
         		latch.await();
