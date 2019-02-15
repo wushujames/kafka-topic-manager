@@ -76,16 +76,15 @@ public class TopicManagerController {
         	zookeeperClient.blockUntilConnected();
 
         	CountDownLatch latch = new CountDownLatch(1);
-        	try (NodeCache nodeCache = new NodeCache(zookeeperClient, "/admin/delete_topics/" + topic)) {
+        	String zkpath = "/admin/delete_topics/" + topic;
+			try (NodeCache nodeCache = new NodeCache(zookeeperClient, zkpath)) {
         		nodeCache.getListenable().addListener(new NodeCacheListener() {
         			@Override
         			public void nodeChanged() throws Exception {
         				ChildData currentData = nodeCache.getCurrentData();
         				if (currentData == null) { 
-        					logger.info("data change watched, and current data = null");
+        					logger.info("path " + zkpath + " disappeared, which means the topic has successfully been deleted");
         					latch.countDown();
-        				} else {
-        					logger.info("node " + currentData.getPath() + " changed");
         				}
         			}
         		});
